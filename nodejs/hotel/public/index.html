@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Booking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .room, .auth {
+            background: #fff;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .room h2, .auth h2 {
+            margin: 0;
+            color: #333;
+        }
+        .room p {
+            color: #666;
+        }
+        .book-btn, .auth-btn {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Hotel Booking</h1>
+    </header>
+    
+    <div class="container">
+        <div class="auth">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button class="auth-btn" onclick="login()">Login</button>
+            <p>Don't have an account? <button class="auth-btn" onclick="register()">Register</button></p>
+        </div>
+        <div class="container" id="rooms-container">
+            <!-- Rooms will be loaded here dynamically -->
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:5000";
+
+        async function fetchRooms() {
+            try {
+                const response = await fetch(`${API_URL}/rooms`);
+                const rooms = await response.json();
+                const container = document.getElementById("rooms-container");
+                container.innerHTML = "";
+                
+                rooms.forEach(room => {
+                    const roomDiv = document.createElement("div");
+                    roomDiv.classList.add("room");
+                    roomDiv.innerHTML = `
+                        <h2>${room.title}</h2>
+                        <p>${room.description}</p>
+                        <p><strong>$${room.price} / night</strong></p>
+                        <button class="book-btn" onclick="bookRoom(${room.id})">Book Now</button>
+                    `;
+                    container.appendChild(roomDiv);
+                });
+            } catch (error) {
+                console.error("Error fetching rooms:", error);
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem("token", data.token);
+                    alert("Login successful");
+                    fetchRooms();
+                } else {
+                    alert("Login failed: " + data.message);
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                if (response.ok) {
+                    alert("Registration successful. Please login.");
+                } else {
+                    const data = await response.json();
+                    alert("Registration failed: " + data.message);
+                }
+            } catch (error) {
+                console.error("Registration error:", error);
+            }
+        }
+
+        async function bookRoom(roomId) {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("Please log in first!");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/bookings`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": token
+                    },
+                    body: JSON.stringify({
+                        room_id: roomId,
+                        check_in: "2025-03-10",
+                        check_out: "2025-03-12"
+                    })
+                });
+                
+                if (response.ok) {
+                    alert("Room booked successfully!");
+                } else {
+                    const data = await response.json();
+                    alert("Booking failed: " + data.message);
+                }
+            } catch (error) {
+                console.error("Error booking room:", error);
+            }
+        }
+
+        fetchRooms();
+    </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, button {
+            width: 100%;
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: white;
+            margin: 10px auto;
+            padding: 10px;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li button {
+            width: auto;
+            margin-left: 10px;
+            background-color: #dc3545;
+        }
+        li button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Management</h1>
+    <form id="userForm">
+        <input type="hidden" id="userId">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="number" id="age" placeholder="Age" required>
+        <button type="submit">Save</button>
+    </form>
+    <h2>Users List</h2>
+    <ul id="usersList"></ul>
+    <script>
+        const apiUrl = "http://localhost:3000/users";
+        async function fetchUsers() {
+            const res = await fetch(apiUrl);
+            const users = await res.json();
+            document.getElementById("usersList").innerHTML = users.map(user => 
+                `<li>
+                    ${user.name} - ${user.email} - ${user.age} 
+                    <button onclick="editUser('${user._id}', '${user.name}', '${user.email}', ${user.age})">Edit</button>
+                    <button onclick="deleteUser('${user._id}')">Delete</button>
+                </li>`
+            ).join("");
+        }
+        document.getElementById("userForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const id = document.getElementById("userId").value;
+            const userData = {
+                name: document.getElementById("name").value,
+                email: document.getElementById("email").value,
+                age: document.getElementById("age").value
+            };
+            const method = id ? "PUT" : "POST";
+            const url = id ? `${apiUrl}/${id}` : apiUrl;
+            await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userData),
+            });
+            document.getElementById("userForm").reset();
+            document.getElementById("userId").value = "";
+            fetchUsers();
+        });
+        async function editUser(id, name, email, age) {
+            document.getElementById("userId").value = id;
+            document.getElementById("name").value = name;
+            document.getElementById("email").value = email;
+            document.getElementById("age").value = age;
+        }
+        async function deleteUser(id) {
+            await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+            fetchUsers();
+        }
+        fetchUsers();
+    </script>
+</body>
+</html>
